@@ -12,6 +12,10 @@
 (def on "#ff0000")
 (def off "#0000ff")
 
+(def game-width 40)
+(def game-height 40)
+(def square-size 10)
+
 (defn create-map [w h]
   (into {}
     (for [x (range 0 w) y (range 0 h)]
@@ -35,8 +39,6 @@
 
 (defn update-cell [m [coord status]]
   (let [n (count-living-neighbours coord m)]
-    (.log js/console n)
-    (.log js/console m)
     (cond
       (and (= status :on) (< n 2)) [coord :off]
       (and (= status :on) (or (= n 2) (= n 3))) [coord :on]
@@ -48,29 +50,23 @@
   )
 
 (defn tick [m]
-  (->>
-    (map (partial update-cell m) m)
+  (->> m
+    (map (partial update-cell m))
     (into {})))
 
-(def game (atom (create-map 4 4)))
+(def game (atom (create-map game-width game-height)))
 
-(js/setInterval (swap! game tick) 1000)
-
-(defn home-page []
-  [:div [:h2 "Welcome to game-of-life"]
-   [:div [:a {:href "#/about"} "go to about page"]]])
-
-(defn about-page []
-  [:div [:h2 "About game-of-life"]
-   [:div [:a {:href "#/"} "go to the home page"]]])
+(js/setInterval #(swap! game tick) 200)
 
 (defn get-fill [status]
   (status {:on on :off off}))
 
 (defn render-game [game]
-  [:svg.svg {:width 400 :height 400}
+  [:svg.svg {:width (* game-width square-size) :height (* game-height square-size)}
      (for [[[x y] status] @game]
-         [:rect {:width 100 :height 100 :x (* x 100) :y (* y 100) :fill (get-fill status)}])
+       ^{:key [x y]} [:rect {:width square-size :height square-size
+                             :x (* x square-size) :y (* y square-size)
+                             :fill (get-fill status)}])
     ])
 
 (defn game-of-life []
